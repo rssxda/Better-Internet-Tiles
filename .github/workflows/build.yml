@@ -12,11 +12,9 @@ jobs:
 
     steps:
 
-      # Checkout repository
-      - name: Checkout
+      - name: Checkout repository
         uses: actions/checkout@v4
 
-      # Setup Java
       - name: Setup JDK 17
         uses: actions/setup-java@v4
         with:
@@ -24,7 +22,6 @@ jobs:
           java-version: 17
           cache: gradle
 
-      # Make Gradle executable
       - name: Grant execute permission
         run: chmod +x gradlew
 
@@ -33,7 +30,6 @@ jobs:
         run: |
           echo "${{ secrets.KEYSTORE_BASE64 }}" | base64 -d > release.keystore
 
-      # Create keystore properties
       - name: Create keystore.properties
         run: |
           echo "storeFile=release.keystore" >> keystore.properties
@@ -41,31 +37,29 @@ jobs:
           echo "keyAlias=${{ secrets.KEY_ALIAS }}" >> keystore.properties
           echo "keyPassword=${{ secrets.KEY_PASSWORD }}" >> keystore.properties
 
-      # Optional Firebase file
+      # Optional Firebase config (SAFE VERSION)
       - name: Add google-services.json
-        if: ${{ secrets.GOOGLE_SERVICES_JSON != '' }}
-        run: echo '${{ secrets.GOOGLE_SERVICES_JSON }}' > app/google-services.json
+        run: |
+          if [ ! -z "${{ secrets.GOOGLE_SERVICES_JSON }}" ]; then
+            echo '${{ secrets.GOOGLE_SERVICES_JSON }}' > app/google-services.json
+          fi
 
-      # Build Release
-      - name: Build APK & AAB
+      - name: Build Release
         run: ./gradlew assembleRelease bundleRelease
 
-      # Upload APK artifact
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
           name: release-apk
           path: app/build/outputs/apk/release/*.apk
 
-      # Upload AAB artifact
       - name: Upload AAB
         uses: actions/upload-artifact@v4
         with:
           name: release-aab
           path: app/build/outputs/bundle/release/*.aab
 
-      # Create GitHub Release
-      - name: Create Release
+      - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         with:
           files: |
